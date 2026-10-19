@@ -1,75 +1,73 @@
-# React + TypeScript + Vite
+# DayCommit
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Your day, one commit at a time.**
 
-Currently, two official plugins are available:
+DayCommit is a daily routine tracker for people who work from home and want structure without burning out. Plan three important tasks, follow a weekday schedule, keep a running log of the day, and review the week on Saturday. Every change is saved as a history of commits with diffs, so you can see not only what you did, but how your plans changed during the day.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+> Status: early development. The app is being rebuilt in React and TypeScript from a working single-file prototype.
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Planned for the first version:
 
-## Expanding the ESLint configuration
+- **Weekly schedule** with tracked blocks (checkboxes), counters and untracked blocks for orientation
+- **Three important tasks a day**, plus any number of secondary ones
+- **Daily log** written throughout the day, and a short evening summary
+- **Weekly review** with summary figures, on a Saturday buffer day; Sunday stays a day off
+- **History with diffs** for every field, in the spirit of Git commits
+- **Mobile-friendly**, with light and dark themes
+- **Autosave**, plus JSON export and import
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tech stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- [React](https://react.dev) and [TypeScript](https://www.typescriptlang.org) (strict mode)
+- [Vite](https://vite.dev) for development and builds
+- [Vitest](https://vitest.dev) and [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for tests
+- ESLint and Prettier
+- CSS Modules
+- Storage: `localStorage` first, a small self-hosted backend later
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Getting started
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Requirements: Node.js 20 or newer.
 
+```bash
+git clone https://github.com/d-luga/DayCommit.git
+cd DayCommit
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Then open the address Vite prints (usually http://localhost:5173).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Other scripts:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run build    # production build
+npm run preview  # preview the production build
+npm test         # run tests
+npm run lint     # check code style
 ```
+
+## Development workflow
+
+- Work happens in feature branches and pull requests into `main`.
+- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, ...).
+- Planned work is tracked in [GitHub Issues](https://github.com/d-luga/DayCommit/issues).
+
+This project is built with an AI pair programmer (Claude). Some features are written by me, some by Claude and reviewed by me; every change goes through a pull request.
+
+## Roadmap
+
+- [ ] Project setup
+- [ ] Data model and local storage
+- [ ] Schedule, tasks, daily log, weekly review
+- [ ] Weekend modes
+- [ ] History with diffs
+- [ ] Mobile polish and themes
+- [ ] Export and import
+- [ ] Self-hosted deployment
+
+## Author
+
+Denis Lugavtsov · [GitHub](https://github.com/d-luga)
