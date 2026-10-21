@@ -1,0 +1,16 @@
+name: daycommit
+
+services:
+  web:
+    image: ${WEB_IMAGE:?WEB_IMAGE is not set}
+    restart: unless-stopped
+    # No published ports: the edge proxy reaches this container
+    # as daycommit-web:80 over the shared "edge" network.
+    networks:
+      edge:
+        aliases:
+          - daycommit-web
+
+networks:
+  edge:
+    external: true
