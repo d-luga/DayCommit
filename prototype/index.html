@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Weekly Routine Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one column. Week bar, tasks + daily log for the selected day, the Mon-Sun schedule grid, week summary, weekly review */
+:root{
+  --bg:#f3f5f2; --surface:#ffffff; --fg:#1d2420; --muted:#5f6b64; --line:#d9dfd9;
+  --accent:#2f6f5e; --accent-soft:#dcebe5; --sel:#eef6f2; --warn:#a2621b; --good:#2f7d4a; --danger:#b3412f;
+  --display:"Unbounded","Onest",system-ui,sans-serif;
+  --body:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141917; --surface:#1c2320; --fg:#e6ece8; --muted:#97a39c; --line:#2e3833;
+  --accent:#6cc2a8; --accent-soft:#1f3a32; --sel:#20302a; --warn:#e0a35a; --good:#74c98f; --danger:#f08a76; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141917; --surface:#1c2320; --fg:#e6ece8; --muted:#97a39c; --line:#2e3833;
+  --accent:#6cc2a8; --accent-soft:#1f3a32; --sel:#20302a; --warn:#e0a35a; --good:#74c98f; --danger:#f08a76; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45}
+.wrap{max-width:820px;margin:0 auto;padding-inline:16px;padding-block:24px 48px;display:grid;gap:20px}
+h1{font-family:var(--display);font-weight:600;font-size:1.35rem;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-family:var(--display);font-weight:500;font-size:1rem;margin:0}
+h3{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0}
+.sub{color:var(--muted);margin:4px 0 0;font-size:.9rem}
+.weekbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.weekbar .label{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.95rem;flex:1;min-width:0}
+button{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.status{font-size:.8rem;color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:14px}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.daytabs{display:flex;gap:6px;flex-wrap:wrap;padding-bottom:6px}
+.daytabs button{position:relative;padding:4px 10px;font-size:.85rem;font-variant-numeric:tabular-nums}
+.daytabs button.we{border-style:dashed}
+.daytabs button.today{font-weight:700;border-color:var(--accent);border-width:2px;padding:3px 9px}
+.daytabs button.today::after{content:"";position:absolute;left:50%;bottom:-8px;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:var(--accent)}
+.daytabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface);border-style:solid}
+.daymode{font-size:.85rem;color:var(--muted);margin:0;padding:8px 10px;background:var(--bg);border-radius:8px}
+.group{display:grid;gap:8px}
+.task{display:flex;align-items:flex-start;gap:10px}
+.task .idx{font-family:var(--mono);color:var(--muted);font-size:.85rem;width:1.2ch;padding-top:9px;text-align:right}
+.task .chk{margin-top:6px;flex:none}
+.task.done textarea{text-decoration:line-through;color:var(--muted)}
+.del{flex:none;border:none;background:transparent;color:var(--muted);font-size:1.2rem;line-height:1;padding:8px 6px}
+.del:hover{color:var(--danger)}
+.add{justify-self:start;font-size:.85rem;color:var(--accent);border-style:dashed}
+textarea{width:100%;box-sizing:border-box;font:inherit;font-size:16px;line-height:1.45;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;resize:vertical;overflow:hidden}
+textarea.one{resize:none;min-height:40px}
+textarea.log{min-height:170px}
+textarea.summary{min-height:64px}
+textarea.review{min-height:170px;background:var(--surface)}
+.field{display:grid;gap:6px}
+.field label{font-weight:500;font-size:.9rem}
+.note{font-size:.82rem;color:var(--muted);margin:0}
+.gridbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px}
+th,td{padding:8px 3px;text-align:center;border-bottom:1px solid var(--line)}
+th{font-weight:500;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+th.today{color:var(--accent);font-weight:700}
+.sel{background:var(--sel)}
+th.sel{box-shadow:inset 0 -2px 0 var(--accent)}
+td.habit,th.habit{text-align:left;padding-left:12px;width:38%}
+td.habit .t{display:block;font-weight:500}
+td.habit .h{display:block;color:var(--muted);font-size:.76rem;font-family:var(--mono)}
+tr.grp td{background:var(--bg);font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:6px 12px}
+tr:last-child td{border-bottom:none}
+tr.fixed td.habit .t{font-weight:400;color:var(--muted)}
+td.free{font-size:.72rem;color:var(--muted);letter-spacing:.04em;background:repeating-linear-gradient(135deg,transparent 0 6px,var(--accent-soft) 6px 7px)}
+.chk{appearance:none;width:26px;height:26px;border:1.5px solid var(--line);border-radius:7px;cursor:pointer;display:inline-grid;place-content:center;background:var(--surface);margin:0}
+.chk::after{content:"";width:12px;height:7px;border:2.5px solid var(--surface);border-top:none;border-right:none;transform:rotate(-45deg) translate(1px,-1px);opacity:0}
+.chk:checked{background:var(--accent);border-color:var(--accent)}
+.chk:checked::after{opacity:1}
+.num{width:40px;padding:4px;text-align:center;font-family:var(--mono);font-size:15px;font-variant-numeric:tabular-nums;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg)}
+.min td{font-size:.8rem}
+.pill{display:inline-block;min-width:22px;padding:2px 6px;border-radius:99px;font-family:var(--mono);font-size:.72rem}
+.pill.ok{background:var(--accent-soft);color:var(--good)}
+.pill.no{color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.stat b{display:block;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:1.4rem;font-weight:500}
+.stat span{color:var(--muted);font-size:.8rem}
+@media (max-width:480px){.cards{grid-template-columns:1fr 1fr}.cards .stat:last-child{grid-column:1/-1}}
+body{margin:0}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Weekly Routine Tracker</h1>
+    <p class="sub">Weekdays follow the schedule, Saturday is a buffer and review day, Sunday is a day off. A minimum day = morning walk + admin and outreach + at least one deep work block.</p>
+  </header>
+
+  <div class="weekbar">
+    <button id="prev" type="button" aria-label="Previous week">←</button>
+    <div class="label" id="weekLabel">…</div>
+    <button id="next" type="button" aria-label="Next week">→</button>
+    <button id="thisWeek" type="button">This week</button>
+  </div>
+  <div class="status" id="status" aria-live="polite">Loading…</div>
+
+  <section class="panel" aria-label="Tasks and daily log">
+    <div class="panel-head"><h2 id="dayTitle">Day</h2><span class="status" id="tasksCount"></span></div>
+    <div class="daytabs" id="dayTabs" role="group" aria-label="Day of the week"></div>
+    <p class="daymode" id="dayMode" hidden></p>
+
+    <div class="group" id="impGroup">
+      <h3>Important tasks (up to 3)</h3>
+      <div class="group" id="taskList"></div>
+      <p class="note">Specific and doable in one day: not "learn Spanish", but "finish 3 lessons of the Spanish course".</p>
+    </div>
+
+    <div class="group">
+      <h3>Secondary</h3>
+      <div class="group" id="task2List"></div>
+      <button type="button" class="add" id="addTask2">+ Add task</button>
+    </div>
+
+    <div class="field">
+      <label for="dayNote" id="dayNoteLabel">Daily log</label>
+      <textarea id="dayNote" class="log" maxlength="5000" placeholder="Write as the day goes: what you did, what moved and why, thoughts"></textarea>
+    </div>
+    <div class="field">
+      <label for="daySummary">Day summary <span class="note">evening, 1-2 lines</span></label>
+      <textarea id="daySummary" class="summary" maxlength="500" placeholder="The main thing today, and what carries over to tomorrow"></textarea>
+    </div>
+  </section>
+
+  <div class="gridbox">
+    <table>
+      <thead><tr id="headRow"></tr></thead>
+      <tbody id="body"></tbody>
+    </table>
+  </div>
+
+  <section class="cards" aria-label="Week summary">
+    <div class="stat"><b id="sDone">0%</b><span>ticked this week</span></div>
+    <div class="stat"><b id="sMin">0 / 5</b><span>minimum days</span></div>
+    <div class="stat"><b id="sApps">0</b><span>messages this week</span></div>
+  </section>
+
+  <section class="field">
+    <h2>Weekly review</h2>
+    <label for="review" class="note">On Saturday: what worked, what to change next week (20 minutes)</label>
+    <textarea id="review" class="review" maxlength="8000" placeholder="For example: got up at 7:30 on 4 of 5 days. Deep work 2 kept slipping because of errands - move errands to the flexible slot."></textarea>
+  </section>
+</div>
+
+<script>
+const WD=[0,1,2,3,4], SAT=[5], ALL=[0,1,2,3,4,5,6];
+const HABITS = [
+  {g:"Morning"},
+  {id:"wake", t:"Get up at 7:30", tWe:"Get up by 8:30", h:"Mon-Fri 7:30 · Sat-Sun by 8:30", days:ALL},
+  {id:"walk", t:"Morning walk", h:"7:45-8:30", days:WD},
+  {fixed:true, t:"Breakfast", h:"8:30-9:00", days:WD},
+  {g:"Work"},
+  {id:"deep1", t:"Deep work 1: learning", h:"9:00-11:45", days:WD},
+  {id:"job", t:"Admin and outreach", h:"12:00-13:00", days:WD},
+  {id:"apps", t:"Messages sent", h:"count", num:true, days:WD},
+  {fixed:true, t:"Lunch", h:"13:00-14:00", days:WD},
+  {fixed:true, t:"Short break", h:"14:00-14:30", days:WD},
+  {id:"deep2", t:"Deep work 2: project", h:"14:30-17:00", days:WD},
+  {fixed:true, t:"Flexible slot", h:"17:00-17:45", days:WD},
+  {id:"plan", t:"Plan tomorrow: 3 important tasks", h:"17:45-18:00 · on Friday, plan Monday", days:WD},
+  {g:"Evening"},
+  {id:"wife", t:"Dinner and chores", h:"18:00-19:30", days:WD},
+  {fixed:true, t:"Free time", h:"19:30-22:15", days:WD},
+  {id:"review", t:"Day summary written", h:"22:15-22:30", days:ALL},
+  {id:"sleep", t:"Screens off, in bed by 23:30", h:"22:30-23:30 · tick it the next morning", days:ALL},
+  {g:"Weekend"},
+  {id:"buffer", t:"Buffer: finish the week's leftovers", h:"Sat morning, up to 3 hours", days:SAT},
+  {id:"weekrev", t:"Weekly review", h:"Sat, 20 minutes", days:SAT},
+];
+const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const DAY_FULL = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const DAY_MODE = {5:"Saturday is a buffer day: up to 3 hours in the morning for the week's leftovers, plus the weekly review. The rest of the day is free.",6:"Sunday is a full day off. Monday was already planned on Friday."};
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MIN_DEEP = ["deep1","ai","deep2"];
+
+function mondayOf(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());const wd=(x.getDay()+6)%7;x.setDate(x.getDate()-wd);return x}
+function isoWeek(mon){const th=new Date(mon);th.setDate(th.getDate()+3);const y=th.getFullYear();const m4=mondayOf(new Date(y,0,4));const w=1+Math.round((mon-m4)/6048e5);return {y,w}}
+function weekKey(mon){const {y,w}=isoWeek(mon);return y+"-W"+String(w).padStart(2,"0")}
+function fmt(d){return MONTHS[d.getMonth()]+" "+d.getDate()}
+
+let monday = mondayOf(new Date());
+let state = emptyState();
+let curDay = 0;
+let db = null, saveTimer = null, loadSeq = 0, dirty = false;
+const $ = id => document.getElementById(id);
+const setStatus = t => $("status").textContent = t;
+function emptyState(){return {checks:{},apps:{},tasks:{},tasks2:{},notes:{},summary:{},review:""}}
+function todayCol(){return mondayOf(new Date()).getTime()===monday.getTime()?(new Date().getDay()+6)%7:-1}
+function todayIdx(){const t=todayCol();return t<0?0:t}
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+/* Textareas grow with their content */
+function autosize(el){el.style.height="auto";el.style.height=el.scrollHeight+2+"px"}
+function makeArea(cls,value,label,max){
+  const a=document.createElement("textarea");a.className=cls;a.rows=1;a.maxLength=max;a.value=value||"";a.setAttribute("aria-label",label);
+  a.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&cls==="one"){e.preventDefault();a.blur()}});
+  a.addEventListener("input",()=>autosize(a));
+  requestAnimationFrame(()=>autosize(a));
+  return a;
+}
+
+/* ---------- Tasks panel ---------- */
+function important(i){if(!Array.isArray(state.tasks[i]))state.tasks[i]=[0,1,2].map(()=>({t:"",done:false}));return state.tasks[i]}
+function secondary(i){if(!Array.isArray(state.tasks2[i]))state.tasks2[i]=[];return state.tasks2[i]}
+function filled(l){return (Array.isArray(l)?l:[]).filter(x=>x&&x.t&&x.t.trim())}
+function updateTaskMeta(){
+  const btns=$("dayTabs").children;
+  DAYS.forEach((d,i)=>{const f=filled(i>4?state.tasks2[i]:state.tasks[i]);if(btns[i])btns[i].textContent=f.length?`${d} ${f.filter(x=>x.done).length}/${f.length}`:d});
+  const f=filled(state.tasks[curDay]), s=filled(state.tasks2[curDay]);
+  let txt;
+  if(curDay>4){txt=s.length?`tasks: ${s.filter(x=>x.done).length} of ${s.length}`:"no tasks, and that's fine"}
+  else{
+    txt=f.length?`important: ${f.filter(x=>x.done).length} of ${f.length}`:"no important tasks yet";
+    if(s.length)txt+=` · secondary: ${s.filter(x=>x.done).length} of ${s.length}`;
+  }
+  $("tasksCount").textContent=txt;
+}
+function taskRow(item,num,onDone,onText,onDel,label){
+  const row=document.createElement("div");row.className="task"+(item.done?" done":"");
+  const n=document.createElement("span");n.className="idx";n.textContent=num;
+  const c=document.createElement("input");c.type="checkbox";c.className="chk";c.checked=!!item.done;c.setAttribute("aria-label",label+" done");
+  const t=makeArea("one",item.t,label,300);t.placeholder=label;
+  c.addEventListener("change",()=>{onDone(c.checked);row.classList.toggle("done",c.checked);updateTaskMeta();changed()});
+  t.addEventListener("input",()=>{onText(t.value);updateTaskMeta();changed()});
+  row.append(n,c,t);
+  if(onDel){const d=document.createElement("button");d.type="button";d.className="del";d.textContent="×";d.setAttribute("aria-label","Delete: "+label);d.onclick=()=>{onDel();renderTasks();changed()};row.appendChild(d)}
+  return {row,t};
+}
+function renderTasks(){
+  const tabs=$("dayTabs");tabs.innerHTML="";
+  const tc=todayCol();
+  $("impGroup").hidden=curDay>4;
+  DAYS.forEach((d,i)=>{
+    const b=document.createElement("button");b.type="button";b.id="day_"+i;
+    b.className=(i>4?"we ":"")+(i===tc?"today":"");
+    if(i===tc){b.setAttribute("aria-current","date");b.title="Today"}
+    b.setAttribute("aria-pressed",String(i===curDay));
+    b.onclick=()=>{curDay=i;renderTasks();highlight()};
+    tabs.appendChild(b);
+  });
+  $("dayTitle").textContent=DAY_FULL[curDay];
+  const mode=DAY_MODE[curDay];$("dayMode").hidden=!mode;$("dayMode").textContent=mode||"";
+
+  const box=$("taskList");box.innerHTML="";
+  const imp=Array.isArray(state.tasks[curDay])?state.tasks[curDay]:[];
+  for(let k=0;k<3;k++){
+    const it=imp[k]||{t:"",done:false};
+    box.appendChild(taskRow(it,k+1,v=>{important(curDay)[k].done=v},v=>{important(curDay)[k].t=v},null,`Important task ${k+1}`).row);
+  }
+  const box2=$("task2List");box2.innerHTML="";
+  (Array.isArray(state.tasks2[curDay])?state.tasks2[curDay]:[]).forEach((it,k)=>{
+    box2.appendChild(taskRow(it,"·",v=>{secondary(curDay)[k].done=v},v=>{secondary(curDay)[k].t=v},()=>{secondary(curDay).splice(k,1)},`Secondary task ${k+1}`).row);
+  });
+
+  $("dayNoteLabel").textContent="Daily log: "+DAY_FULL[curDay];
+  $("dayNote").value=state.notes[curDay]||"";
+  $("daySummary").value=state.summary[curDay]||"";
+  requestAnimationFrame(()=>{autosize($("dayNote"));autosize($("daySummary"))});
+  updateTaskMeta();
+}
+$("addTask2").onclick=()=>{
+  secondary(curDay).push({t:"",done:false});renderTasks();changed();
+  const rows=$("task2List").querySelectorAll("textarea");rows[rows.length-1]?.focus();
+};
+
+/* ---------- Schedule grid ---------- */
+function render(){
+  const sun=new Date(monday);sun.setDate(sun.getDate()+6);
+  const {w}=isoWeek(monday);
+  $("weekLabel").textContent=`Week ${w} · ${fmt(monday)} - ${fmt(sun)}, ${sun.getFullYear()}`;
+  const today=todayCol();
+  $("headRow").innerHTML='<th class="habit">Schedule</th>'+DAYS.map((d,i)=>`<th data-day="${i}" class="${i===today?'today':''}" scope="col">${d}</th>`).join("");
+  const body=$("body");body.innerHTML="";
+  for(const h of HABITS){
+    const tr=document.createElement("tr");
+    if(h.g){tr.className="grp";tr.innerHTML=`<td colspan="8">${h.g}</td>`;body.appendChild(tr);continue}
+    tr.innerHTML=`<td class="habit"><span class="t"${h.tWe?` data-wd="${h.t}" data-we="${h.tWe}"`:""}>${h.t}</span><span class="h">${h.h}</span></td>`;
+    if(h.fixed){
+      tr.className="fixed";
+      const f=document.createElement("td");f.colSpan=5;f.className="free";f.textContent="no tick";tr.appendChild(f);
+      [5,6].forEach(i=>{const td=document.createElement("td");td.dataset.day=i;tr.appendChild(td)});
+      body.appendChild(tr);continue;
+    }
+    DAYS.forEach((d,i)=>{
+      const td=document.createElement("td");td.dataset.day=i;
+      const key=h.id+"_"+i;
+      if(!h.days.includes(i)){tr.appendChild(td);return}
+      if(h.num){
+        const inp=document.createElement("input");inp.type="number";inp.inputMode="numeric";inp.min="0";inp.max="99";inp.className="num";inp.id="n_"+key;
+        inp.setAttribute("aria-label",h.t+", "+d);inp.value=state.apps[i]??"";
+        inp.addEventListener("input",()=>{const v=parseInt(inp.value,10);if(isNaN(v))delete state.apps[i];else state.apps[i]=v;changed()});
+        inp.addEventListener("keydown",e=>{if(e.key==="Enter")inp.blur()});
+        td.appendChild(inp);
+      }else{
+        const c=document.createElement("input");c.type="checkbox";c.className="chk";c.id="c_"+key;
+        c.setAttribute("aria-label",h.t+", "+d);c.checked=!!state.checks[key];
+        c.addEventListener("change",()=>{if(c.checked)state.checks[key]=true;else delete state.checks[key];changed()});
+        td.appendChild(c);
+      }
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  }
+  const mr=document.createElement("tr");mr.className="min";mr.id="minRow";body.appendChild(mr);
+  $("review").value=state.review||"";
+  requestAnimationFrame(()=>autosize($("review")));
+  renderTasks();
+  summarize();
+}
+function highlight(){
+  document.querySelectorAll("[data-day]").forEach(el=>el.classList.toggle("sel",Number(el.dataset.day)===curDay));
+  document.querySelectorAll("[data-we]").forEach(el=>el.textContent=curDay>4?el.dataset.we:el.dataset.wd);
+}
+function isMin(i){const c=state.checks;return !!(c["walk_"+i]&&c["job_"+i]&&MIN_DEEP.some(id=>c[id+"_"+i]))}
+function summarize(){
+  let total=0,done=0;
+  HABITS.filter(h=>h.id&&!h.num).forEach(h=>h.days.forEach(i=>{total++;if(state.checks[h.id+"_"+i])done++}));
+  $("sDone").textContent=Math.round(done/total*100)+"%";
+  let mins=0;
+  const cells=DAYS.map((_,i)=>{
+    if(i>4)return `<td data-day="${i}"></td>`;
+    const ok=isMin(i);if(ok)mins++;return `<td data-day="${i}"><span class="pill ${ok?'ok':'no'}">${ok?'yes':'-'}</span></td>`;
+  }).join("");
+  $("minRow").innerHTML=`<td class="habit"><span class="t">Minimum day</span><span class="h">counted automatically</span></td>`+cells;
+  $("sMin").textContent=mins+" / 5";
+  $("sApps").textContent=Object.values(state.apps).reduce((a,b)=>a+(+b||0),0);
+  highlight();
+}
+
+/* ---------- Saving ---------- */
+function changed(){dirty=true;summarize();clearTimeout(saveTimer);setStatus("Saving…");saveTimer=setTimeout(save,600)}
+async function save(){
+  dirty=false;
+  const key=weekKey(monday);
+  const data={week:key,checks:state.checks,apps:state.apps,tasks:state.tasks,tasks2:state.tasks2,notes:state.notes,summary:state.summary,review:state.review,updated:new Date().toISOString()};
+  if(db){
+    try{await db.doc("weeks/"+key).set(data);setStatus("Saved")}
+    catch(e){lsSet("w_"+key,data);setStatus("Couldn't save to the server; saved in this browser only")}
+  }else{lsSet("w_"+key,data);setStatus("Saved in this browser")}
+}
+async function load(){
+  const seq=++loadSeq;const key=weekKey(monday);
+  let data=null;
+  if(db){try{const s=await db.doc("weeks/"+key).get();if(s.exists)data=s.data()}catch(e){}}
+  if(!data)data=lsGet("w_"+key);
+  if(seq!==loadSeq)return;
+  const copy=v=>JSON.parse(JSON.stringify(v||{}));
+  state={checks:copy(data?.checks),apps:copy(data?.apps),tasks:copy(data?.tasks),tasks2:copy(data?.tasks2),notes:copy(data?.notes),summary:copy(data?.summary),review:data?.review||""};
+  for(const i of [5,6]){if(state.checks["wakeWe_"+i]){state.checks["wake_"+i]=true;delete state.checks["wakeWe_"+i]}}
+  curDay=todayIdx();
+  render();
+  setStatus(db?"Changes save automatically":"Changes are saved in this browser only");
+}
+function flush(){clearTimeout(saveTimer);if(dirty)save()}
+function shift(n){flush();monday=new Date(monday);monday.setDate(monday.getDate()+7*n);load()}
+$("prev").onclick=()=>shift(-1);
+$("next").onclick=()=>shift(1);
+$("thisWeek").onclick=()=>{flush();monday=mondayOf(new Date());load()};
+$("review").addEventListener("input",e=>{state.review=e.target.value;autosize(e.target);changed()});
+$("dayNote").addEventListener("input",e=>{const v=e.target.value;if(v.trim())state.notes[curDay]=v;else delete state.notes[curDay];autosize(e.target);changed()});
+$("daySummary").addEventListener("input",e=>{const v=e.target.value;if(v.trim())state.summary[curDay]=v;else delete state.summary[curDay];autosize(e.target);changed()});
+
+/* Tapping outside a text field closes the on-screen keyboard */
+document.addEventListener("pointerdown",e=>{
+  const a=document.activeElement;
+  if(!a||!(a.tagName==="TEXTAREA"||(a.tagName==="INPUT"&&a.type!=="checkbox")))return;
+  if(e.target===a||e.target.closest("textarea,input,button,label"))return;
+  a.blur();
+});
+window.addEventListener("resize",()=>document.querySelectorAll("textarea").forEach(autosize));
+
+curDay=todayIdx();
+render();
+(async()=>{
+  try{db=window.claude?.use?await window.claude.use("db"):null}catch(e){db=null}
+  load();
+})();
+</script>
+</body>
+</html>
